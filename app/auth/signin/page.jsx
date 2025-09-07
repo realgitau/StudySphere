@@ -18,7 +18,8 @@ const GoogleIcon = () => (
 
 export default function SignInPage() {
   const [providers, setProviders] = useState(null)
-  const { data: session } = useSession()
+  const sessionData = useSession()
+  const session = sessionData?.data
   const router = useRouter()
 
   // If user is already logged in, redirect them to the dashboard
@@ -45,15 +46,15 @@ export default function SignInPage() {
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center">
       <div className="max-w-md w-full mx-auto">
         <div className="text-center mb-8">
-            <Link href="/" className="text-3xl font-bold text-blue-600">
-                StudySphere
-            </Link>
-            <h2 className="mt-4 text-2xl font-bold text-gray-900">
-                Sign in to your account
-            </h2>
-            <p className="mt-2 text-sm text-gray-600">
-                to continue your learning journey
-            </p>
+          <Link href="/" className="text-3xl font-bold text-blue-600">
+            StudySphere
+          </Link>
+          <h2 className="mt-4 text-2xl font-bold text-gray-900">
+            Sign in to your account
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            to continue your learning journey
+          </p>
         </div>
         
         <div className="bg-white py-8 px-6 shadow-lg rounded-lg">
