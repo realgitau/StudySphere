@@ -24,3 +24,16 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Custom styles for React Big Calendar */
+.rbc-calendar {
+  color: #374151; /* A dark gray from Tailwind's palette (gray-700) */
+}
+
+.rbc-toolbar button {
+  color: #374151 !important; /* Ensure toolbar buttons are also dark */
+}
+
+.rbc-active {
+  background-color: #2563eb !important; /* A blue from Tailwind's palette (blue-600) for active buttons */
+}
