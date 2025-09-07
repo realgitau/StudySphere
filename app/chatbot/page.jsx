@@ -1,6 +1,6 @@
 // app/chatbot/page.jsx
 'use client'
-
+import { useChat } from 'ai/react'
 import { Send } from 'lucide-react'
 
 export default function ChatbotPage() {
