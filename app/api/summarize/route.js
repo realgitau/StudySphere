@@ -1,35 +1,47 @@
 // app/api/summarize/route.js
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/lib/auth'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../auth/[...nextauth]/route';
+import OpenAI from 'openai';
 
-// Initialize the Gemini client
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
-export async function POST(request) {
-  const session = await getServerSession(authOptions)
+export async function POST(req) {
+  const session = await getServerSession(authOptions);
   if (!session) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
+    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const { text } = await request.json()
-    if (!text || text.trim().length < 50) { // Basic validation
-      return new Response(JSON.stringify({ error: 'Please provide at least 50 characters of text to summarize.' }), { status: 400 })
+    const { text } = await req.json();
+
+    if (!text || text.trim().length < 100) { // Basic validation
+      return NextResponse.json({ message: 'Please provide at least 100 characters of text to summarize.' }, { status: 400 });
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-
-    const prompt = `Summarize the following text for a student. Focus on the key points, definitions, and main arguments. Present the summary in clear, easy-to-understand bullet points:\n\n---\n\n${text}`;
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const summary = response.text();
-
-    return new Response(JSON.stringify({ summary }), { status: 200 })
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content: "You are a helpful assistant designed to summarize academic texts for students. Summarize the following text by extracting the key points, main arguments, and conclusions. Present the summary in clear, concise bullet points."
+        },
+        {
+          role: "user",
+          content: text
+        }
+      ],
+      temperature: 0.5,
+      max_tokens: 256,
+    });
+    
+    const summary = response.choices[0].message.content;
+    return NextResponse.json({ summary });
 
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    return new Response(JSON.stringify({ error: 'Failed to generate summary. Please try again later.' }), { status: 500 })
+    console.error("Error with OpenAI API:", error);
+    return NextResponse.json({ message: 'Failed to generate summary.', error: error.message }, { status: 500 });
   }
 }

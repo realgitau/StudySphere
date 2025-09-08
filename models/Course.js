@@ -1,15 +1,15 @@
-// models/note.model.js
+// models/course.model.js
 import mongoose, { Schema, models } from 'mongoose';
 
-const noteSchema = new Schema({
-  title: {
+const courseSchema = new Schema({
+  name: {
     type: String,
-    required: [true, "Title is required."],
+    required: true,
     trim: true,
   },
-  content: {
+  description: {
     type: String,
-    default: "",
+    trim: true,
   },
   userId: {
     type: Schema.Types.ObjectId,
@@ -18,6 +18,5 @@ const noteSchema = new Schema({
   },
 }, { timestamps: true });
 
-const Note = models.Note || mongoose.model('Note', noteSchema);
-
-export default Note;
+const Course = models.Course || mongoose.model('Course', courseSchema);
+export default Course;

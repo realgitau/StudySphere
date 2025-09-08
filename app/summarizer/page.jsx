@@ -1,79 +1,78 @@
 // app/summarizer/page.jsx
-'use client'
+'use client';
 
-import { useState } from 'react'
+import { useState } from 'react';
+import Link from 'next/link';
 
 export default function SummarizerPage() {
-  const [inputText, setInputText] = useState('')
-  const [summary, setSummary] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState(null)
+    const [text, setText] = useState('');
+    const [summary, setSummary] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError(null)
-    setSummary('')
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsLoading(true);
+        setError('');
+        setSummary('');
 
-    try {
-      const response = await fetch('/api/summarize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: inputText }),
-      })
+        try {
+            const res = await fetch('/api/summarize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text }),
+            });
 
-      const data = await response.json()
+            const data = await res.json();
+            
+            if (!res.ok) {
+                throw new Error(data.message || 'Something went wrong');
+            }
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Something went wrong')
-      }
+            setSummary(data.summary);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-      setSummary(data.summary)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-  
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-3xl mx-auto text-center">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">AI Text Summarizer</h1>
-        <p className="text-gray-600 mb-8">
-          Paste your notes, articles, or textbook chapters below to get a concise summary of the key points.
-        </p>
-      </div>
-
-      <div className="max-w-3xl mx-auto">
-        <form onSubmit={handleSubmit}>
-          <textarea
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            placeholder="Paste your text here (minimum 50 characters)..."
-            rows={15}
-            className="w-full p-4 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
-          />
-          <button
-            type="submit"
-            disabled={isLoading || inputText.trim().length < 50}
-            className="mt-4 w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? 'Summarizing...' : 'Generate Summary'}
-          </button>
-        </form>
-
-        {error && <div className="mt-6 p-4 bg-red-100 text-red-700 rounded-lg">{error}</div>}
-
-        {summary && (
-          <div className="mt-8 p-6 bg-white rounded-lg shadow-md border">
-            <h2 className="text-2xl font-bold mb-4">Summary</h2>
-            <div className="prose max-w-none text-gray-800 whitespace-pre-wrap">
-              {summary}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  )
+    return (
+        <div className="min-h-screen bg-gray-50">
+            <header className="bg-white shadow-sm">
+                <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+                    <h1 className="text-2xl font-bold text-blue-600">AI Text Summarizer</h1>
+                    <Link href="/dashboard" className="text-blue-600 hover:underline">&larr; Back to Dashboard</Link>
+                </div>
+            </header>
+            <main className="container mx-auto px-6 py-8">
+                <div className="bg-white p-8 rounded-lg shadow-md">
+                    <p className="text-gray-600 mb-4">Paste your text below (e.g., an article, lecture notes) and get a concise summary.</p>
+                    <form onSubmit={handleSubmit}>
+                        <textarea
+                            value={text}
+                            onChange={(e) => setText(e.target.value)}
+                            placeholder="Enter text to summarize (at least 100 characters)..."
+                            className="w-full h-64 p-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <button
+                            type="submit"
+                            disabled={isLoading || text.length < 100}
+                            className="mt-4 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                        >
+                            {isLoading ? 'Summarizing...' : 'Generate Summary'}
+                        </button>
+                    </form>
+                    {error && <p className="mt-4 text-red-500">{error}</p>}
+                    
+                    {summary && (
+                        <div className="mt-8 p-6 bg-gray-100 rounded-lg">
+                            <h2 className="text-xl font-semibold mb-3">Summary:</h2>
+                            <p className="text-gray-800 whitespace-pre-wrap">{summary}</p>
+                        </div>
+                    )}
+                </div>
+            </main>
+        </div>
+    );
 }

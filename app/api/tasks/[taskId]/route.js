@@ -1,64 +1,61 @@
-// app/api/tasks/[taskId]/route.js
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/lib/auth'
-import dbConnect from '@/lib/mongoose'
-import Task from '@/models/Task'
+// app/api/tasks/[id]/route.js
+import { NextResponse } from 'next/server';
+import dbConnect from '@/lib/mongodb';
+import Task from '@/models/Task';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../../auth/[...nextauth]/route';
 
-// This function handles PATCH requests to update a task (e.g., mark as complete)
-export async function PATCH(request, { params }) {
-  const session = await getServerSession(authOptions)
+// Helper function to check ownership
+async function checkTaskOwnership(taskId, userId) {
+    const task = await Task.findById(taskId);
+    if (!task) return null;
+    if (task.userId.toString() !== userId) return false;
+    return task;
+}
+
+// PUT: Update a specific task (including toggling completion)
+export async function PUT(req, { params }) {
+  const session = await getServerSession(authOptions);
   if (!session) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
+    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    await dbConnect()
-    const { taskId } = params
-    const body = await request.json()
+    await dbConnect();
+    const { id } = params;
+    const task = await checkTaskOwnership(id, session.user.id);
 
-    // Find the task and update it
-    const updatedTask = await Task.findOneAndUpdate(
-      { _id: taskId, userId: session.user.id }, // Ensure user owns the task
-      { $set: { completed: body.completed } },
-      { new: true } // Return the updated document
-    )
+    if (task === null) return NextResponse.json({ message: 'Task not found' }, { status: 404 });
+    if (task === false) return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
 
-    if (!updatedTask) {
-      return new Response(JSON.stringify({ error: 'Task not found or user not authorized' }), { status: 404 })
-    }
+    const body = await req.json();
+    const updatedTask = await Task.findByIdAndUpdate(id, body, { new: true });
 
-    // A 200 OK with the updated object is also a valid response for PATCH
-    return new Response(JSON.stringify(updatedTask), { status: 200 })
+    return NextResponse.json(updatedTask);
   } catch (error) {
-    console.error(error)
-    return new Response(JSON.stringify({ error: 'Failed to update task' }), { status: 500 })
+    return NextResponse.json({ message: 'Error updating task', error }, { status: 500 });
   }
 }
 
-// This new function handles DELETE requests
-export async function DELETE(request, { params }) {
-  const session = await getServerSession(authOptions)
+// DELETE: Delete a specific task
+export async function DELETE(req, { params }) {
+  const session = await getServerSession(authOptions);
   if (!session) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
+    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
-
+  
   try {
-    await dbConnect()
-    const { taskId } = params
+    await dbConnect();
+    const { id } = params;
+    const task = await checkTaskOwnership(id, session.user.id);
+    
+    if (task === null) return NextResponse.json({ message: 'Task not found' }, { status: 404 });
+    if (task === false) return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+    
+    await Task.findByIdAndDelete(id);
 
-    // Find the task and delete it
-    const result = await Task.deleteOne({
-      _id: taskId,
-      userId: session.user.id, // Ensure user owns the task
-    })
-
-    if (result.deletedCount === 0) {
-      return new Response(JSON.stringify({ error: 'Task not found or user not authorized' }), { status: 404 })
-    }
-
-    return new Response(null, { status: 204 }) // 204 No Content is a standard success response for DELETE
+    return NextResponse.json({ message: 'Task deleted successfully' });
   } catch (error) {
-    console.error(error)
-    return new Response(JSON.stringify({ error: 'Failed to delete task' }), { status: 500 })
+    return NextResponse.json({ message: 'Error deleting task', error }, { status: 500 });
   }
 }

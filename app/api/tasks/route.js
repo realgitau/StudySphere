@@ -1,52 +1,50 @@
 // app/api/tasks/route.js
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/lib/auth'
-import dbConnect from '@/lib/mongoose'
-import Task from '@/models/Task'
+import { NextResponse } from 'next/server';
+import dbConnect from '@/lib/mongodb';
+import Task from '@/models/Task';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../auth/[...nextauth]/route';
 
-export async function GET(request) {
-  const session = await getServerSession(authOptions)
+// GET: Fetch all tasks for the logged-in user
+export async function GET() {
+  const session = await getServerSession(authOptions);
   if (!session) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
+    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    await dbConnect()
-
-    const tasks = await Task.find({ userId: session.user.id }).sort({ dueDate: 1 })
-
-    return new Response(JSON.stringify(tasks), { status: 200 })
+    await dbConnect();
+    const tasks = await Task.find({ userId: session.user.id }).sort({ createdAt: -1 });
+    return NextResponse.json(tasks);
   } catch (error) {
-    console.error(error)
-    return new Response(JSON.stringify({ error: 'Failed to fetch tasks' }), { status: 500 })
+    return NextResponse.json({ message: 'Error fetching tasks', error }, { status: 500 });
   }
 }
 
-export async function POST(request) {
-  const session = await getServerSession(authOptions)
+// POST: Create a new task
+export async function POST(req) {
+  const session = await getServerSession(authOptions);
   if (!session) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
+    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    await dbConnect()
-    const body = await request.json()
+    await dbConnect();
+    const { title, description, dueDate, priority } = await req.json();
 
-    // Create a new task using the Mongoose model
-    const newTask = new Task({
-      ...body,
-      userId: session.user.id, // Ensure the task is associated with the logged-in user
-    })
-
-    await newTask.save() // This validates and saves the document
-
-    return new Response(JSON.stringify(newTask), { status: 201 })
-  } catch (error) {
-    console.error(error)
-    // Mongoose validation errors can be caught here
-    if (error.name === 'ValidationError') {
-      return new Response(JSON.stringify({ error: error.message }), { status: 400 })
+    if (!title) {
+      return NextResponse.json({ message: 'Title is required' }, { status: 400 });
     }
-    return new Response(JSON.stringify({ error: 'Failed to create task' }), { status: 500 })
+
+    const newTask = await Task.create({
+      title,
+      description,
+      dueDate,
+      priority,
+      userId: session.user.id,
+    });
+    return NextResponse.json(newTask, { status: 201 });
+  } catch (error) {
+    return NextResponse.json({ message: 'Error creating task', error }, { status: 500 });
   }
 }

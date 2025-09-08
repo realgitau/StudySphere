@@ -1,40 +1,35 @@
-// models/Task.js
-import mongoose, { Schema } from 'mongoose'
+// models/task.model.js
+import mongoose, { Schema, models } from 'mongoose';
 
-const taskSchema = new Schema(
-  {
-    title: {
-      type: String,
-      required: [true, 'Title is required.'],
-      trim: true,
-    },
-    description: {
-      type: String,
-      trim: true,
-      default: '',
-    },
-    dueDate: {
-      type: Date,
-      default: null,
-    },
-    priority: {
-      type: String,
-      enum: ['low', 'medium', 'high'],
-      default: 'medium',
-    },
-    completed: {
-      type: Boolean,
-      default: false,
-    },
-    userId: {
-      type: String, // Storing as a string from NextAuth session
-      required: true,
-    },
+const taskSchema = new Schema({
+  title: {
+    type: String,
+    required: [true, "Title is required."],
+    trim: true,
   },
-  {
-    timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' }, // Mongoose handles createdAt/updatedAt
-  }
-)
+  description: {
+    type: String,
+    trim: true,
+  },
+  dueDate: {
+    type: Date,
+  },
+  priority: {
+    type: String,
+    enum: ['Low', 'Medium', 'High'],
+    default: 'Medium',
+  },
+  isCompleted: {
+    type: Boolean,
+    default: false,
+  },
+  userId: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+}, { timestamps: true });
 
-// This prevents Mongoose from redefining the model every time the serverless function is invoked
-export default mongoose.models.Task || mongoose.model('Task', taskSchema)
+const Task = models.Task || mongoose.model('Task', taskSchema);
+
+export default Task;

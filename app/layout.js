@@ -2,6 +2,7 @@
 import { Jost } from 'next/font/google'
 import './globals.css'
 import Navbar from '@/components/Navbar'
+import AuthProvider from '@/components/AuthProvider'
 
 const jost = Jost({ subsets: ['latin'] })
 
@@ -13,6 +14,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
+      <AuthProvider>
       <body className={jost.className}>
         <div className="min-h-screen flex flex-col">
           <Navbar />
@@ -26,6 +28,7 @@ export default function RootLayout({ children }) {
           </footer>
         </div>
       </body>
+      </AuthProvider>
     </html>
   )
 }

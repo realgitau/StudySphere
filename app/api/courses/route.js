@@ -1,30 +1,27 @@
-// app/api/notes/route.js
+// app/api/courses/route.js
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import Note from '@/models/Note';
+import Course from '@/models/Course';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]/route';
 
-// GET: Fetch all notes for the logged-in user
+// GET all courses for the user
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
   await dbConnect();
-  const notes = await Note.find({ userId: session.user.id }).sort({ updatedAt: -1 });
-  return NextResponse.json(notes);
+  const courses = await Course.find({ userId: session.user.id }).sort({ createdAt: -1 });
+  return NextResponse.json(courses);
 }
 
-// POST: Create a new note
+// POST a new course
 export async function POST(req) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
   await dbConnect();
-  const { title, content } = await req.json();
-
-  if (!title) return NextResponse.json({ message: 'Title is required' }, { status: 400 });
-
-  const newNote = await Note.create({ title, content, userId: session.user.id });
-  return NextResponse.json(newNote, { status: 201 });
+  const { name, description } = await req.json();
+  const newCourse = await Course.create({ name, description, userId: session.user.id });
+  return NextResponse.json(newCourse, { status: 201 });
 }
